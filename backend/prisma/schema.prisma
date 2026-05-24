@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  WORKER
+  EMPLOYER
+}
+
+enum JobStatus {
+  ACTIVE
+  CLOSED
+  FILLED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  WITHDRAWN
+}
+
+enum PhoneRequestStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  PHONE_REQUEST_APPROVED
+  PHONE_REQUEST_REJECTED
+  PHONE_REQUEST_CREATED
+  JOB_APPLICATION_CREATED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  role      UserRole
+  name      String
+  phone     String   @unique
+  state     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workerProfile   WorkerProfile?
+  employerProfile EmployerProfile?
+  notifications   Notification[]
+
+  @@index([role])
+  @@index([phone])
+  @@index([isActive])
+}
+
+model WorkerProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+}
+
+model EmployerProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs Job[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subcategories Subcategory[]
+  jobs          Job[]
+}
+
+model Subcategory {
+  id         String   @id @default(cuid())
+  categoryId String
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  jobs     Job[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  employerId    String
+  categoryId    String
+  subcategoryId String
+  title         String
+  description   String
+  location      String
+  state         String
+  wage          Int
+  wageType      String
+  jobType       String
+  status        JobStatus @default(ACTIVE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  employer     EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  category     Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory  Subcategory     @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  applications JobApplication[]
+
+  @@index([employerId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([status])
+  @@index([state])
+  @@index([wageType])
+}
+
+model JobApplication {
+  id                    String             @id @default(cuid())
+  jobId                 String
+  workerId              String
+  status                ApplicationStatus  @default(APPLIED)
+  phoneRequestStatus    PhoneRequestStatus @default(NONE)
+  employerPhoneUnlocked Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  job    Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  worker WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, workerId])
+  @@index([jobId])
+  @@index([workerId])
+  @@index([status])
+  @@index([phoneRequestStatus])
+  @@index([employerPhoneUnlocked])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([readAt])
+}
