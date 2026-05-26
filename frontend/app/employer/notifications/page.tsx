@@ -16,7 +16,9 @@ export default function EmployerNotificationsPage() {
           notifications={notifications.data ?? []}
           onRead={(id) => actions.markRead.mutate(id)}
           onReadAll={() => actions.markAllRead.mutate()}
-          pending={actions.markRead.isPending || actions.markAllRead.isPending}
+          onApprovePhone={(applicationId) => actions.approvePhone.mutate(applicationId)}
+          onRejectPhone={(applicationId) => actions.rejectPhone.mutate(applicationId)}
+          pending={actions.markRead.isPending || actions.markAllRead.isPending || actions.approvePhone.isPending || actions.rejectPhone.isPending}
         />
       )}
     </>

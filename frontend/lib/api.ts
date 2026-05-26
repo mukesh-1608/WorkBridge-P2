@@ -1,4 +1,6 @@
 import type {
+  Category,
+  Subcategory,
   EmployerApplication,
   EmployerJob,
   JobPayload,
@@ -53,7 +55,16 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify(body)
     }),
-  workerJobs: (token: string) => api<WorkerJob[]>("/api/worker/jobs", { token }),
+  workerJobs: (token: string, search?: string, categoryId?: string, subcategoryId?: string) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (categoryId) params.set("categoryId", categoryId);
+    if (subcategoryId) params.set("subcategoryId", subcategoryId);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return api<WorkerJob[]>(`/api/worker/jobs${qs}`, { token });
+  },
+  categories: () => api<Category[]>("/api/categories"),
+  subcategories: () => api<Subcategory[]>("/api/subcategories"),
   workerJob: (token: string, id: string) => api<WorkerJob>(`/api/worker/jobs/${id}`, { token }),
   apply: (token: string, id: string) =>
     api<{ id: string }>(`/api/worker/jobs/${id}/apply`, { method: "POST", token }),

@@ -17,7 +17,12 @@ export const updateProfile = async (req: Request, res: Response) => {
 };
 
 export const listJobs = async (req: Request, res: Response) => {
-  const jobs = await workerService.listActiveJobsForWorker(userId(req));
+  const jobs = await workerService.listActiveJobsForWorker(
+    userId(req),
+    req.query.search as string | undefined,
+    req.query.categoryId as string | undefined,
+    req.query.subcategoryId as string | undefined
+  );
   res.json({ success: true, data: jobs });
 };
 

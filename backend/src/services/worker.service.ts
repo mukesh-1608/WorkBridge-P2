@@ -1,7 +1,9 @@
-import { ApplicationStatus, JobStatus, PhoneRequestStatus } from "@prisma/client";
+import { ApplicationStatus, JobStatus, NotificationType, PhoneRequestStatus, Prisma } from "@prisma/client";
 import { prisma } from "../prisma/client";
 import { HttpError } from "../utils/http-error";
 import { serializeJobForWorker } from "./job.serializer";
+import { createNotification } from "./notification.service";
+import { emitToUser } from "../realtime/socket.server";
 
 const getWorker = async (userId: string) => {
   const worker = await prisma.workerProfile.findUnique({ where: { userId } });
@@ -11,10 +13,31 @@ const getWorker = async (userId: string) => {
   return worker;
 };
 
-export const listActiveJobsForWorker = async (userId: string) => {
+export const listActiveJobsForWorker = async (userId: string, search?: string, categoryId?: string, subcategoryId?: string) => {
   const worker = await getWorker(userId);
+  
+  const where: Prisma.JobWhereInput = { status: JobStatus.ACTIVE };
+
+  if (categoryId && categoryId !== "all") {
+    where.categoryId = categoryId;
+  }
+
+  if (subcategoryId && subcategoryId !== "all") {
+    where.subcategoryId = subcategoryId;
+  }
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+      { location: { contains: search, mode: "insensitive" } },
+      { category: { name: { contains: search, mode: "insensitive" } } },
+      { subcategory: { name: { contains: search, mode: "insensitive" } } }
+    ];
+  }
+
   const jobs = await prisma.job.findMany({
-    where: { status: JobStatus.ACTIVE },
+    where,
     include: {
       category: true,
       subcategory: true,
@@ -62,9 +85,34 @@ export const applyToJob = async (userId: string, jobId: string) => {
     throw new HttpError(409, "Worker has already applied to this job");
   }
 
-  return prisma.jobApplication.create({
-    data: { jobId, workerId: worker.id, status: ApplicationStatus.APPLIED }
+  const application = await prisma.jobApplication.create({
+    data: { jobId, workerId: worker.id, status: ApplicationStatus.APPLIED },
+    include: {
+      worker: { include: { user: true } },
+      job: { include: { employer: { include: { user: true } } } }
+    }
   });
+
+  const notification = await createNotification({
+    userId: application.job.employer.userId,
+    type: NotificationType.JOB_APPLICATION_CREATED,
+    title: "New Job Application",
+    message: `${application.worker.user.name} applied for your job: ${application.job.title}.`,
+    metadata: {
+      applicationId: application.id,
+      jobId: application.jobId
+    }
+  });
+
+  emitToUser(application.job.employer.userId, "job_application.created", {
+    applicationId: application.id,
+    jobId: application.jobId,
+    jobTitle: application.job.title,
+    workerName: application.worker.user.name,
+    notification
+  });
+
+  return application;
 };
 
 export const listWorkerApplications = async (userId: string) => {
@@ -92,7 +140,11 @@ export const listWorkerApplications = async (userId: string) => {
 export const requestEmployerPhone = async (userId: string, jobId: string) => {
   const worker = await getWorker(userId);
   const application = await prisma.jobApplication.findUnique({
-    where: { jobId_workerId: { jobId, workerId: worker.id } }
+    where: { jobId_workerId: { jobId, workerId: worker.id } },
+    include: {
+      worker: { include: { user: true } },
+      job: { include: { employer: { include: { user: true } } } }
+    }
   });
 
   if (!application) {
@@ -111,13 +163,34 @@ export const requestEmployerPhone = async (userId: string, jobId: string) => {
     throw new HttpError(409, "Phone request is already pending");
   }
 
-  return prisma.jobApplication.update({
+  const updated = await prisma.jobApplication.update({
     where: { id: application.id },
     data: {
       phoneRequestStatus: PhoneRequestStatus.PENDING,
       employerPhoneUnlocked: false
     }
   });
+
+  const notification = await createNotification({
+    userId: application.job.employer.userId,
+    type: NotificationType.PHONE_REQUEST_CREATED,
+    title: "Phone number requested",
+    message: `${application.worker.user.name} wants to contact you regarding the ${application.job.title} job.`,
+    metadata: {
+      applicationId: application.id,
+      jobId: application.jobId
+    }
+  });
+
+  emitToUser(application.job.employer.userId, "phone_request.created", {
+    applicationId: application.id,
+    jobId: application.jobId,
+    jobTitle: application.job.title,
+    workerName: application.worker.user.name,
+    notification
+  });
+
+  return updated;
 };
 
 export const listWorkerPhoneRequests = async (userId: string) => {

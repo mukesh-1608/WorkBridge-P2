@@ -1,21 +1,42 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { EmployerJob, JobPayload } from "@/lib/types";
+import type { JobPayload } from "@/lib/types";
+import { useCategories, useSubcategories } from "@/lib/hooks";
 
-type OptionJob = Pick<EmployerJob, "category" | "subcategory">;
+export function JobForm({ initial, onSubmit, pending }: { initial?: Partial<JobPayload>; onSubmit: (payload: JobPayload) => void; pending?: boolean }) {
+  const { data: categories = [] } = useCategories();
+  const { data: allSubcategories = [] } = useSubcategories();
 
-export function JobForm({ jobs, initial, onSubmit, pending }: { jobs: OptionJob[]; initial?: Partial<JobPayload>; onSubmit: (payload: JobPayload) => void; pending?: boolean }) {
-  const categories = useMemo(() => Array.from(new Map(jobs.filter((job) => job.category).map((job) => [job.category.id, job.category])).values()), [jobs]);
-  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? categories[0]?.id ?? "");
-  const subcategories = useMemo(() => Array.from(new Map(jobs.filter((job) => job.subcategory && (!categoryId || job.subcategory.categoryId === categoryId)).map((job) => [job.subcategory.id, job.subcategory])).values()), [categoryId, jobs]);
-  const [subcategoryId, setSubcategoryId] = useState(initial?.subcategoryId ?? subcategories[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [subcategoryId, setSubcategoryId] = useState(initial?.subcategoryId ?? "");
+
+  useEffect(() => {
+    if (!categoryId && categories.length > 0) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categoryId, categories]);
+
+  const subcategories = useMemo(() => allSubcategories.filter((sub) => sub.categoryId === categoryId), [allSubcategories, categoryId]);
+
+  useEffect(() => {
+    if (subcategories.length > 0) {
+      if (!subcategoryId || !subcategories.find(sub => sub.id === subcategoryId)) {
+        setSubcategoryId(subcategories[0].id);
+      }
+    } else {
+      if (!initial?.subcategoryId) {
+        setSubcategoryId("");
+      }
+    }
+  }, [subcategories, subcategoryId, initial?.subcategoryId]);
+
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [location, setLocation] = useState(initial?.location ?? "Chennai");
@@ -83,11 +104,18 @@ export function JobForm({ jobs, initial, onSubmit, pending }: { jobs: OptionJob[
             </label>
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Wage type
-              <Input value={wageType} onChange={(event) => setWageType(event.target.value)} required />
+              <Select value={wageType} onChange={(event) => setWageType(event.target.value)}>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </Select>
             </label>
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Job type
-              <Input value={jobType} onChange={(event) => setJobType(event.target.value)} required />
+              <Select value={jobType} onChange={(event) => setJobType(event.target.value)}>
+                <option value="full-time">Full-time</option>
+                <option value="half-time">Half-time</option>
+              </Select>
             </label>
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Status

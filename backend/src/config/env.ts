@@ -8,7 +8,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default("7d"),
   PORT: z.coerce.number().int().positive().default(3000),
-  CLIENT_ORIGIN: z.string().default("http://localhost:3001"),
+  CLIENT_ORIGIN: z.string().default("http://localhost:3000"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development")
 });
 

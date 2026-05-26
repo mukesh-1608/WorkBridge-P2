@@ -12,9 +12,17 @@ function useToken() {
   return token;
 }
 
-export function useWorkerJobs() {
+export function useWorkerJobs(search?: string, categoryId?: string, subcategoryId?: string) {
   const token = useToken();
-  return useQuery({ queryKey: ["worker", "jobs"], queryFn: () => apiClient.workerJobs(token).then((r) => r.data) });
+  return useQuery({ queryKey: ["worker", "jobs", search, categoryId, subcategoryId], queryFn: () => apiClient.workerJobs(token, search, categoryId, subcategoryId).then((r) => r.data) });
+}
+
+export function useCategories() {
+  return useQuery({ queryKey: ["categories"], queryFn: () => apiClient.categories().then((r) => r.data) });
+}
+
+export function useSubcategories() {
+  return useQuery({ queryKey: ["subcategories"], queryFn: () => apiClient.subcategories().then((r) => r.data) });
 }
 
 export function useWorkerJob(id: string) {

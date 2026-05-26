@@ -42,7 +42,11 @@ export default function WorkerJobDetailPage() {
               <p className="flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4" />{job.data.jobType}</p>
               <p className="flex items-center gap-2"><Wallet className="h-4 w-4" />{currency(job.data.wage)} / {job.data.wageType}</p>
               <p className="flex items-center gap-2"><MapPin className="h-4 w-4" />{job.data.location}, {job.data.state}</p>
-              <p className="flex items-center gap-2"><Phone className="h-4 w-4" />{phone ?? "Phone hidden until employer approval"}</p>
+              {!hasApplied ? (
+                <p className="flex items-center gap-2 text-slate-400"><Phone className="h-4 w-4" />+91 •••••••••• (Apply to unlock)</p>
+              ) : (
+                <p className="flex items-center gap-2"><Phone className="h-4 w-4" />{phone ?? "Phone hidden until employer approval"}</p>
+              )}
             </div>
             {!hasApplied ? (
               <Button className="w-full" onClick={() => actions.apply.mutate(job.data.id)} disabled={actions.apply.isPending}>Apply to job</Button>

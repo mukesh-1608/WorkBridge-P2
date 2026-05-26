@@ -25,12 +25,13 @@ const config: Config = {
         }
       },
       boxShadow: {
-        soft: "0 16px 48px rgba(15, 23, 42, 0.08)",
-        glass: "0 12px 40px rgba(15, 23, 42, 0.10)"
+        sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        DEFAULT: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
       },
       borderRadius: {
-        xl: "1rem",
-        "2xl": "1.25rem"
+        md: "0.375rem",
+        lg: "0.5rem"
       },
       fontFamily: {
         sans: [

@@ -15,7 +15,6 @@ export default function EmployerJobDetailPage() {
   const params = useParams<{ jobId: string }>();
   const router = useRouter();
   const job = useEmployerJob(params.jobId);
-  const jobs = useEmployerJobs();
   const applications = useEmployerApplications();
   const actions = useEmployerActions();
   const relevantApplications = applications.data?.filter((item) => item.job.id === params.jobId) ?? [];
@@ -45,7 +44,7 @@ export default function EmployerJobDetailPage() {
         action={<Button variant="destructive" onClick={() => actions.deleteJob.mutate(job.data.id, { onSuccess: () => router.push("/employer/jobs") })}><Trash2 className="h-4 w-4" />Delete</Button>}
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <JobForm jobs={jobs.data ?? [job.data]} initial={initial} onSubmit={(payload) => actions.updateJob.mutate({ id: job.data.id, body: payload })} pending={actions.updateJob.isPending} />
+        <JobForm initial={initial} onSubmit={(payload) => actions.updateJob.mutate({ id: job.data.id, body: payload })} pending={actions.updateJob.isPending} />
         <Card>
           <CardContent className="p-5">
             <h3 className="text-base font-semibold text-slate-950">Applications</h3>

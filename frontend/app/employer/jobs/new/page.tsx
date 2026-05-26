@@ -8,7 +8,6 @@ import type { JobPayload } from "@/lib/types";
 
 export default function NewEmployerJobPage() {
   const router = useRouter();
-  const jobs = useEmployerJobs();
   const actions = useEmployerActions();
   const create = (payload: JobPayload) => {
     actions.createJob.mutate(payload, {
@@ -19,7 +18,7 @@ export default function NewEmployerJobPage() {
   return (
     <>
       <PageHeader eyebrow="New job" title="Publish a polished role" description="Create a clear posting with wage, location, category, and status." />
-      <JobForm jobs={jobs.data ?? []} onSubmit={create} pending={actions.createJob.isPending} />
+      <JobForm onSubmit={create} pending={actions.createJob.isPending} />
     </>
   );
 }
